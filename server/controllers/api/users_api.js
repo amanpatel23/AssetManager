@@ -1,4 +1,5 @@
 const User = require('../../models/user');
+const Album = require('../../models/album');
 const jwt = require('jsonwebtoken');
 
 module.exports.signup = async function(request, response) {
@@ -38,10 +39,67 @@ module.exports.signin = async function(request, response) {
     }
 
     // Generate a JWT token
-    const token = jwt.sign({ userId: user._id }, 'amanpatel', { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id }, 'amanpatel', { expiresIn: '10h' });
 
     response.status(200).json({ token, name: user.name });
   } catch (error) {
     response.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports.addAlbum = async function(request, response) {
+  try {
+    const { albumName } = request.body;
+    const userId = request.userId;
+
+    const newAlbum = await Album.create({ albumName });
+
+    const user = await User.findById(userId);
+    user.albums.push(newAlbum);
+    await user.save();
+
+    return response.status(200).json({ 
+      album: { albumName, albumId: newAlbum._id }
+    });
+
+  }catch (error) {
+    response.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+module.exports.albums = async function(request, response) {
+  try {
+    const userId = request.userId;
+
+    const user = await User.findById(userId).populate({
+      path: 'albums', 
+      options: {
+        sort: { createdAt: -1 }
+      }
+    });
+
+    const albums = user.albums.map((album) => ({
+      albumName: album.albumName,
+      albumId: album._id
+    }))
+    
+    return response.status(200).json({ albums });
+  }catch(error) {
+    console.log(error);
+  }
+}
+
+module.exports.uploadImage = async function(request, response) {
+  try {
+
+    const file = request.file;
+    console.log(file);
+    if (!file) {
+      return response.status(400).json({ message: 'Upload Images Only!' });
+    }
+
+    response.status(200).json({ message: 'Image Uploaded!' });
+  }catch(error) {
+    response.status(500).json({ error: 'Internal Server Error' });
   }
 }

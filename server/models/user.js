@@ -15,7 +15,13 @@ const userSchema = new Schema({
   password: {
     type: String,
     required: true
-  }
+  },
+  albums: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Album'
+  }]
+}, {
+  timestamps: true
 });
 
 userSchema.pre('save', async function(next) {
